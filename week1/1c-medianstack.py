@@ -114,3 +114,33 @@ c = [a, b]
 d = []
 for obj in [a, b, c, d]:
   print(obj, sys.getsizeof(obj))
+
+# Arrays
+import sys
+import numpy as np
+
+a = np.array([])
+b = np.array([1, 2, 3])
+c = np.zeros(10**6)
+
+for obj in [a, b, c]:
+  print('sys:', sys.getsizeof(obj), 'np:', obj.nbytes)
+
+
+import numpy as np
+
+a = np.zeros(5, dtype=np.int32)
+b = np.zeros(5, dtype=np.float64)
+
+for obj in [a, b]:
+  print('nbytes         :', obj.nbytes)
+  print('size x itemsize:', obj.size*obj.itemsize)
+
+# A FITS image with 200x200 pixels stored in a (200,200) array would take
+size = 200*200*4/1024 #kB, (4 bytes)
+size
+# 1000 images
+size*1000 #156MB
+# 10000 images
+size*10000 #1,5GB
+
