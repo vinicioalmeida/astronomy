@@ -25,11 +25,12 @@
 
 | Dia      | Atividade                                                                 |
 |----------|---------------------------------------------------------------------------|
-| Segunda  | Estudo teórico com Resnick (1h) + Resolução de exercícios                |
-| Terça    | Curso Data Driven Astronomy (Coursera/Grok) (1h)                         |
-| Quarta   | Projeto em Python com dados reais (1h)                                   |
-| Quinta   | Leitura complementar na biblioteca da UFRN (1h)                          |
-| Sexta    | Observação noturna com binóculo (30-60min) + registro/anotações         |
+| Segunda  | Estudo teórico com Resnick (1h) + Resolução de exercícios                 |
+| Terça    | Leitura de divulgação científica (1h)            |
+| Quarta   | Projeto em Python com dados reais (1h)                                    |
+| Quinta   | Leitura complementar de material técnico da biblioteca da UFRN (1h)       |
+| Sexta    | Observação noturna com binóculo (30-60min) + registro/anotações           |
+| Sábado   | Curso Data Driven Astronomy (Coursera/Grok) (1h)                          |
 
 ---
 
