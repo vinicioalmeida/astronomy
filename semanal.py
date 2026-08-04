@@ -4,15 +4,19 @@
 # calcula um indice de qualidade de observacao para cada evento, agrupa os
 # alvos por tipo de sessao e monta um roteiro para a melhor noite da semana.
 
+import os
 import numpy as np
 import itertools
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
-from skyfield.api import load, wgs84, Star
+from skyfield.api import Loader, wgs84, Star
 from skyfield import almanac
 
-ts = load.timescale()
-eph = load('de421.bsp')
+pasta_saida = r'C:\repo\astronomy'
+
+carrega = Loader(pasta_saida)
+ts = carrega.timescale()
+eph = carrega('de421.bsp')
 terra = eph['earth']
 
 # Coordenadas de Natal/RN
@@ -204,17 +208,27 @@ if len(top_eventos) > 0:
     plt.legend()
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
-    plt.savefig('separacao_semanal.png', dpi=120)
+    plt.savefig(os.path.join(pasta_saida, 'separacao_semanal.png'), dpi=120)
     plt.show()
 
 # Painel da melhor noite da semana, no estilo "Observatorio Almeida"
 if len(eventos) > 0:
     melhor_evento = eventos[0]
-    noite_data = (melhor_evento['horario'] - timedelta(hours=3)).date()
+    horario_local_melhor = melhor_evento['horario'] - timedelta(hours=3)
+    # um evento de madrugada (antes do meio-dia local) pertence a noite que
+    # comecou no dia anterior, entao a data da noite recua um dia nesse caso
+    if horario_local_melhor.hour < 12:
+        noite_data = (horario_local_melhor - timedelta(days=1)).date()
+    else:
+        noite_data = horario_local_melhor.date()
 
     objetos_da_noite = []
     for evento in eventos:
-        data_evento = (evento['horario'] - timedelta(hours=3)).date()
+        horario_local_evento = evento['horario'] - timedelta(hours=3)
+        if horario_local_evento.hour < 12:
+            data_evento = (horario_local_evento - timedelta(days=1)).date()
+        else:
+            data_evento = horario_local_evento.date()
         if data_evento == noite_data:
             for nome_obj in evento['par'].split(' - '):
                 if nome_obj not in objetos_da_noite:
@@ -226,7 +240,7 @@ if len(eventos) > 0:
     print('=' * 70)
     print('OBSERVATORIO ALMEIDA')
     print('=' * 70)
-    print('Noite da semana: ' + noite_data.strftime('%d/%m'))
+    print('Noite da semana: ' + noite_data.strftime('%d/%m') + ' para ' + (noite_data + timedelta(days=1)).strftime('%d/%m'))
     print('Classificacao: ' + '*' * classificacao + '.' * (5 - classificacao) + ' (' + str(classificacao) + '/5)')
     print('Objetos:')
     for nome_obj in objetos_da_noite:
@@ -303,7 +317,7 @@ if len(eventos) > 0:
 
     print('')
     print('=' * 70)
-    print('ROTEIRO DA NOITE - ' + noite_data.strftime('%d/%m'))
+    print('ROTEIRO DA NOITE - ' + noite_data.strftime('%d/%m') + ' para ' + (noite_data + timedelta(days=1)).strftime('%d/%m'))
     print('=' * 70)
     if len(roteiro) > 0:
         for indice_item, (hora_local, nome_obj) in enumerate(roteiro):
