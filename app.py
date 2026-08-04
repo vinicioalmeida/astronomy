@@ -1,4 +1,4 @@
-# Observatorio Almeida - painel Streamlit
+# Observatorio Primeira Luz - painel Streamlit
 # Mostra os eventos astronomicos da semana para o ceu de Natal/RN: o indice de
 # qualidade de cada evento, a melhor noite da semana com a fase da Lua e um
 # mapa do ceu gerados por matplotlib, as sessoes de observacao classificadas
@@ -18,7 +18,7 @@ from datetime import datetime, timedelta
 from skyfield.api import Loader, wgs84, Star
 from skyfield import almanac
 
-st.set_page_config(page_title='Observatorio Almeida', layout='wide')
+st.set_page_config(page_title='Observatorio Primeira Luz', layout='wide')
 
 # Pasta de dados: usa a pasta onde este arquivo esta salvo, para funcionar
 # tanto rodando localmente quanto publicado no Streamlit Cloud.
@@ -35,8 +35,8 @@ altitude_minima_visivel = st.sidebar.slider('Altitude minima para considerar vis
 # galaxias, que parecem mais fracos do que a magnitude catalogada sugere.
 alcance_equipamento = {
     'Olho nu': 6.0,
-    'Binoculo (equipamento atual)': 9.5,
-    'Dobson 150mm (proxima aquisicao)': 12.5,
+    'Binoculo': 9.5,
+    'Dobson 150mm': 12.5,
 }
 equipamento_atual = st.sidebar.selectbox('Equipamento disponivel', list(alcance_equipamento.keys()), index=1)
 limite_magnitude_atual = alcance_equipamento[equipamento_atual]
@@ -54,6 +54,7 @@ with st.spinner('Carregando efemerides e calculando posicoes...'):
 
     inicio = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     fim = inicio + timedelta(days=dias_para_frente)
+    rotulo_periodo = 'da semana' if dias_para_frente == 7 else 'dos proximos ' + str(dias_para_frente) + ' dias'
     passo_minutos = 10
     n_passos = int((fim - inicio).total_seconds() / 60 / passo_minutos)
     horarios = [inicio + timedelta(minutes=i * passo_minutos) for i in range(n_passos)]
@@ -186,7 +187,7 @@ with st.spinner('Carregando efemerides e calculando posicoes...'):
 
     eventos.sort(key=lambda e: e['score'], reverse=True)
 
-st.title('Observatorio Almeida')
+st.title('Observatorio Primeira Luz')
 st.caption('Eventos astronomicos em Natal/RN, ' + inicio.strftime('%d/%m/%Y') + ' a ' + fim.strftime('%d/%m/%Y'))
 st.caption('Equipamento selecionado: ' + equipamento_atual + ' (alcance ate magnitude ~' + str(limite_magnitude_atual) + ')')
 
@@ -214,7 +215,7 @@ else:
 
     classificacao = min(5, max(1, round(melhor_evento['score'] / 20)))
 
-    st.header('Noite da semana: ' + noite_data.strftime('%d/%m') + ' para ' + (noite_data + timedelta(days=1)).strftime('%d/%m'))
+    st.header('Melhor noite ' + rotulo_periodo + ': ' + noite_data.strftime('%d/%m') + ' para ' + (noite_data + timedelta(days=1)).strftime('%d/%m'))
 
     # Momento de referencia da noite (21h locais) para calcular a fase da Lua
     # exibida no painel, independente de a Lua participar do evento principal.
@@ -266,7 +267,7 @@ else:
             st.write('- ' + nome_obj)
 
     st.divider()
-    st.subheader('Todos os eventos da semana')
+    st.subheader('Todos os eventos ' + rotulo_periodo)
     linhas_tabela = []
     for evento in eventos:
         linhas_tabela.append({
@@ -282,7 +283,7 @@ else:
     st.dataframe(tabela_eventos, use_container_width=True, hide_index=True)
 
     st.divider()
-    st.subheader('Separacao angular ao longo da semana - top 5 eventos')
+    st.subheader('Separacao angular ao longo ' + rotulo_periodo + ' - top 5 eventos')
     top_eventos = eventos[:5]
     figura_separacao, eixo_separacao = plt.subplots(figsize=(10, 5))
     for evento in top_eventos:
@@ -390,3 +391,6 @@ else:
         st.pyplot(figura_mapa)
     else:
         st.write('Nao foi possivel montar um roteiro para essa noite com os parametros atuais.')
+
+st.divider()
+st.caption('Desenvolvido por Vinicio Almeida')
