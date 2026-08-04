@@ -154,6 +154,8 @@ with st.spinner('Carregando efemérides e calculando posições...'):
             magnitude_do_alvo = max(magnitudes_do_par) if len(magnitudes_do_par) > 0 else None
 
         dentro_do_alcance = magnitude_do_alvo is None or magnitude_do_alvo <= limite_magnitude_atual
+        if not dentro_do_alcance:
+            continue  # alvo fraco demais para o equipamento selecionado, nem entra na lista
 
         tempo_acima_30 = np.sum(
             visivel & (posicoes[nome_a]['alt'] > 30) & (posicoes[nome_b]['alt'] > 30)
