@@ -28,6 +28,10 @@ st.sidebar.header('Parâmetros')
 dias_para_frente = st.sidebar.slider('Dias à frente', 3, 14, 7)
 separacao_maxima = st.sidebar.slider('Separação máxima considerada (graus)', 5, 30, 15)
 altitude_minima_visivel = st.sidebar.slider('Altitude mínima para considerar visível (graus)', 0, 20, 5)
+variacao_minima = st.sidebar.slider(
+    'Variação mínima para contar como evento da semana (graus)', 0, 10, 3,
+    help='Pares com separação quase constante no período (como um planeta lento parado perto de uma estrela fixa ha semanas) sao tratados como alinhamento persistente, nao como evento da semana.'
+)
 
 # Limite de magnitude aproximado de cada equipamento. Sao valores tipicos de
 # referencia (ceu com alguma poluicao luminosa, como o de Natal) - a noite
@@ -106,6 +110,7 @@ with st.spinner('Carregando efemérides e calculando posições...'):
     nomes_para_comparar = [nome for nome, categoria, corpo in catalogo if categoria != 'sol']
 
     eventos = []
+    persistentes = []
     for nome_a, nome_b in itertools.combinations(nomes_para_comparar, 2):
         if posicoes[nome_a]['categoria'] in fixos and posicoes[nome_b]['categoria'] in fixos:
             continue
@@ -157,13 +162,31 @@ with st.spinner('Carregando efemérides e calculando posições...'):
         if not dentro_do_alcance:
             continue  # alvo fraco demais para o equipamento selecionado, nem entra na lista
 
+        separacoes_visiveis = separacao[visivel]
+        amplitude_evento = float(separacoes_visiveis.max() - separacoes_visiveis.min())
+        if amplitude_evento < variacao_minima:
+            # separacao quase constante no periodo: nao e um evento desta
+            # janela, e um alinhamento que ja estava acontecendo e continua
+            persistentes.append({
+                'par': nome_a + ' - ' + nome_b,
+                'separacao': separacao_minima,
+                'altitude_minima': altitude_minima_evento,
+                'magnitude_do_alvo': magnitude_do_alvo,
+            })
+            continue
+
         tempo_acima_30 = np.sum(
             visivel & (posicoes[nome_a]['alt'] > 30) & (posicoes[nome_b]['alt'] > 30)
         ) * passo_minutos / 60
 
         altitude_norm = min(altitude_media / 90, 1)
         ausencia_lua = 1 - fracao_lua if fracao_lua is not None else 1
-        magnitude_norm = min(max((8 - magnitude_do_alvo) / 12, 0), 1) if magnitude_do_alvo is not None else 0.5
+        # magnitude_norm agora e relativo ao proprio equipamento: um alvo bem
+        # dentro do alcance (bem mais brilhante que o limite) pontua alto; um
+        # alvo raspando o limite do equipamento pontua baixo, mesmo que o
+        # mesmo alvo pontuasse alto com um equipamento mais potente
+        faixa_magnitude = limite_magnitude_atual - (-4)
+        magnitude_norm = min(max((limite_magnitude_atual - magnitude_do_alvo) / faixa_magnitude, 0), 1) if magnitude_do_alvo is not None else 0.5
         tempo_norm = min(tempo_acima_30 / 5, 1)
         horizonte_norm = min(max(altitude_minima_evento / 45, 0), 1)
 
@@ -279,10 +302,26 @@ else:
             'Índice de qualidade': round(evento['score'], 1),
             'Altitude mínima': round(min(evento['alt_a'], evento['alt_b']), 1),
             'Lua iluminada': round(evento['fracao_lua'] * 100, 0) if evento['fracao_lua'] is not None else None,
-            'Ao alcance do equipamento': evento['dentro_do_alcance'],
+            'Magnitude do alvo': round(evento['magnitude_do_alvo'], 1) if evento['magnitude_do_alvo'] is not None else None,
         })
     tabela_eventos = pd.DataFrame(linhas_tabela)
     st.dataframe(tabela_eventos, use_container_width=True, hide_index=True)
+
+    if len(persistentes) > 0:
+        st.caption(
+            'Além disso, ' + str(len(persistentes)) + ' par(es) estão próximos mas com separação praticamente '
+            'constante no período — não são eventos desta janela, são alinhamentos que já estavam acontecendo.'
+        )
+        with st.expander('Ver alinhamentos persistentes'):
+            linhas_persistentes = []
+            for item in persistentes:
+                linhas_persistentes.append({
+                    'Par': item['par'],
+                    'Separação atual (graus)': round(item['separacao'], 1),
+                    'Altitude mínima': round(item['altitude_minima'], 1),
+                    'Magnitude do alvo': round(item['magnitude_do_alvo'], 1) if item['magnitude_do_alvo'] is not None else None,
+                })
+            st.dataframe(pd.DataFrame(linhas_persistentes), use_container_width=True, hide_index=True)
 
     st.divider()
     st.subheader('Separação angular ao longo ' + rotulo_periodo + ' - top 5 eventos')
